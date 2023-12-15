@@ -136,6 +136,11 @@ tool2 = create_retriever_tool(
      "Availability_check",
      "use to check availabilty of car, Input is car make or model or both"
 )
+ tool3 = create_retriever_tool(
+     retriever_3, 
+    "business_details",
+    "Searches and returns documents related to business working days and hours, location and address details."
+)
 
 # Append all tools to the tools list
 airtable_api_key = st.secrets["AIRTABLE"]["AIRTABLE_API_KEY"]
