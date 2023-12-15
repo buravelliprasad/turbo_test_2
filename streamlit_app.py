@@ -102,41 +102,39 @@ loader = CSVLoader(file_path=file_1)
 docs_1 = loader.load()
 embeddings = OpenAIEmbeddings()
 vectorstore_1 = FAISS.from_documents(docs_1, embeddings)
-retriever_1 = vectorstore_1.as_retriever(search_type="similarity", search_kwargs={"k": 3})#check without similarity search and k=8
+retriever_1 = vectorstore_1.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.5,"k": 3})
+# retriever_1 = vectorstore_1.as_retriever(search_type="similarity", search_kwargs={"k": 3})#check without similarity search and k=8
+file_2 = r'short_car_details.csv'
+loader_2 = CSVLoader(file_path=file_2)
+docs_2 = loader_2.load()
+num_ret=len(docs_2)
+vectordb_2 = FAISS.from_documents(docs_2, embeddings)
+retriever_2 = vectordb_2.as_retriever(search_type="similarity", search_kwargs={"k": num_ret})#check without similarity search 
 
 
-# Create the first tool
 # tool1 = create_retriever_tool(
 #     retriever_1, 
-#      "search_car_dealership_inventory",
-#      "This tool is used when answering questions related to car inventory.\
-#       Searches and returns documents regarding the car inventory. Input to this can be multi string.\
-#       The primary input for this function consists of either the car's make and model, whether it's new or used car, and trade-in.\
-#       You should know the make of the car, the model of the car, and whether the customer is looking for a new or used car to answer inventory-related queries.\
-#       When responding to inquiries about any car, restrict the information shared with the customer to the car's make, year, model, and trim.\
-#       The selling price should only be disclosed upon the customer's request, without any prior provision of MRP.\
-#       If the customer inquires about a car that is not available, please refrain from suggesting other cars.\
-#       Provide a link for more details after every car information given."
+#      "details_of_car",
+#      "use to get car information and features. Input to this should be the car's model\
+#      or car features and details about new or used car as a single argument for example new toeing car"
 # )
-# tool1 = create_retriever_tool(
-#     retriever_1, 
-#      "search_car_model_make",
-#      "This tool is used only when you know model of the car or features of the car for example good mileage car, toeing car,\
-#      pickup truck or and new or used car and \
-#       Searches and returns documents regarding the car details. Input to this should be the car's model or car features and new or used car as a single argument"
-# ) 
-
+# # Create the third tool
+# tool3 = create_retriever_tool(
+#     retriever_3, 
+#     "search_business_details",
+#     "Searches and returns documents related to business working days and hours, location and address details."
+# )
 tool1 = create_retriever_tool(
     retriever_1, 
      "details_of_car",
-     "use to get car information and features. Input to this should be the car's model\
-     or car features and details about new or used car as a single argument for example new toeing car"
-)
-# Create the third tool
-tool3 = create_retriever_tool(
-    retriever_3, 
-    "search_business_details",
-    "Searches and returns documents related to business working days and hours, location and address details."
+     "use to get car full details and more information. Input to this should be the car's model\
+     or car features and new or used car as a single argument for example new toeing car or new jeep cherokee"
+) 
+
+tool2 = create_retriever_tool(
+    retriever_2, 
+     "Availability_check",
+     "use to check availabilty of car, Input is car make or model or both"
 )
 
 # Append all tools to the tools list
@@ -165,59 +163,81 @@ langchain.debug=True
 # memory = AgentTokenBufferMemory(memory_key=memory_key, llm=llm)
 memory_key="chat_history"
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-template = """You are an costumer care support exectutive  you get inquiries related to 
-car inventory, business details and appointment scheduling.
-Checking available make and model:
-
-Utilize the "python_repl_1" tool exclusively to retrieve a comprehensive list of all makes and models in the inventory and
-any specific car in the inventory. Subsequently, ask a separate, distinct question regarding the customer's preference for a new or used car.
-This is the result of running python_repl_1 tool \n`markdown_table = df1.iloc[:3, :2].to_markdown()`.\n<df1>\n|  
-|NewUsed|Year|Make|Model|
-   0| USED |2021|Ram| 1500|
-\n|1|NEW|2022|Ram| 1500|
-\n|2|NEW|2022|Jeep|Grand Cherokee 4xe|\n</df1>
-
-Use "details_of_car" tool to get  detail information such as trim, price, color, and cost. 
-Ensure utilization of the tool occurs strictly after confirming both the car model and whether it is new or used.
-Additionally, use the "details_of_car" tool If customer inquires about car with features like towing, off-road capability, 
-good mileage, or pickup trucks, there's in this case no need to ask about make and model of the car but enquire whether they are
-interested in a new or used vehicle.
-If the customer's inquiry mentions only the car's make (manufacturer)Proactively ask them to provide the model information.
-Ask only one question at a time like when asking about model dont ask used or new car. 
-First ask model than used or new car separatly.
-Do not disclose the selling price of a car disclose only when the customer explicitly requests it.
+template = """You are an costumer care support exectutive respond in 
+Personable, Humorous, emotional intelligent, creative, witty and engaging.
+The name of the costumer is {name} and the dealership name is {dealership_name} and 
+never start with appointment related questions.
+To ensure a consistent and effective response, please adhere to the following guidelines:
+Use "Availability_check" for checking availability of a specific make or model of the car and 
+also for getting full list of available makes and models in the inventory. 
+Use "car_details" tool that extracts comprehensive information about cars in the inventory.
+This includes details like trim, price, color, and cost. To optimize the search process, 
+ensure the system is aware of the car model and whether the customer is interested in new or used cars.
+In cases where specific details are not included in the initial inquiry, 
+initiate a proactive approach by requesting the missing information. 
+To streamline the process, ask only one question at a time until all necessary details are obtained.
+This ensures a more efficient and accurate retrieval of car information.
+If customer inquires about car with features like towing, off-road capability,
+good mileage, or pickup trucks, in this case no need to ask about make and model of the car inquire 
+whether they are interested in a new or used vehicle. After knowing car feature and new or old car preference 
+use the "details_of_car" tool to answer.
+Use "Availability_check" for checking car availability and "car_details" for car information.
+Do not disclose or ask the costumer if he likes to know the selling price of a car,
+disclose selling price only when the customer explicitly requests it use "details_of_car" tool.
 Here's a suggested response format while providing car details:
 "We have several models available. Here are a few options:"
 If the customer's query matches a car model, respond with a list of car without square brackets, 
 including the make, year, model, and trim, and provide their respective links in the answer.
 
- checking Appointments Avaliability: If the customer's inquiry lacks specific details such as their preferred/
-day, date or time kindly engage by asking for these specifics.
-{details} Use these details that is todays date and day and find the appointment date from the users input
-and check for appointment availabity using function mentioned in the tools for 
-that specific day or date and time.
+checking Appointments Avaliability: If inquiry lacks specific details like day, date or time kindly engage by 
+asking for these specifics.
+{details} Use these details and find appointment date from the users input and check for appointment availabity 
+using "appointment_scheduling" tool for that specific day or date and time.
 use pandas dataframe `df` in Python.
-Use these details that is todays date and day and find the appointment date from the users input and check
-for appointment availabity using function mentioned in the tools for \nthat specific day or date and time.
-use pandas dataframe `df` in Python.This is the result of running `df.head().to_markdown()`. \n<df>\n|| Date|
-time 9:00| time 10:00 | time 11:00| time 12:00|| 12/13/2023|available|not available|not available|available|\n| 1| 12/14/2023|
-available|available|not available|available|\n| 2|12/15/2023|not available|available|available|not available|\n
-| 3| 12/16/2023|not available|not available|available| not available |\n|\n</df>\n
-You are not meant to use only these rows to answer questions - they are meant as a way of telling you\nabout the shape and schema of the dataframe.
-not meant to use only these rows to answer questions - they are meant as a way of telling you
-about the shape and schema of the dataframe.
+This is the result of running `df.head().to_markdown()`. 
+<df>
+{dhead}
+</df>
+You are not meant to use only these rows to answer questions - they are meant as a way of telling you\nabout the 
+shape and schema of the dataframe.
 you can run intermediate queries to do exporatory data analysis to give you more information as needed. 
-If the requested date and time for the appointment are unavailable, 
+If the requested date and time for the appointment are unavailable,
 suggest alternative times close to the customer's preference.
 
 Additionally, provide this link'[click here](https://engagedai.io/book-a-demo/)'it will take them to a URL where they
-can schedule or reschedule their appointment themselves.
+can schedule or reschedule their appointment themselves. 
+Appointment Scheduling:
 
-Prior to scheduling an appointment, please commence a conversation by soliciting the following customer information:
-First ask if they have a car for trade-in then if they have ask for VIN. If they dont have VIN ask for make, model, 
-Year, Trim and condition of car. Separatly ask for their name, contact number and email address.
-Business details: Enquiry regarding google maps location of the store, address of the store, working days and working hours 
-and contact details use search_business_details tool to get information.
+After scheduling an appointment, initiate the conversation to get tradein car and personal details.
+**Car Trade-In Inquiry and personal details:**
+
+1. Ask the customer if they have a car for trade-in.
+
+    - User: [Response]
+
+2. If the user responds with "Yes" to trade-in, ask for the VIN (Vehicle Identification Number).
+
+    - User: [Response]
+
+3. If the user responds with "No" to the VIN, ask for the make, model, and year of the car.
+
+    - User: [Response]
+
+**Price Expectation:**
+
+4. Once you have the trade-in car details, ask the customer about their expected price for the trade-in.
+
+    - User: [Response]
+
+**Personal Information:**
+
+5. Finally, ask for the customer's personal details.
+
+    - User: [Response]
+    - Name:
+    - Contact Number:
+    - Email Address:
+
 
 Encourage Dealership Visit: Our goal is to encourage customers to visit the dealership for test drives or
 receive product briefings from our team. After providing essential information on the car's make, model,
@@ -226,12 +246,15 @@ for a comprehensive product overview by our experts.
 Business details: Enquiry regarding google maps location of the store, address of the store, working days and working hours 
 and contact details use search_business_details tool to get information.
 
+
 Keep responses concise, not exceeding two sentences and answers should be interactive.
-Understand you are talking to well educated people answer in a polite US english.
+Respond in a polite US english.
 answer only from the provided content dont makeup answers.
 """
 details= "Today's current date is "+ todays_date +" today's weekday is "+day_of_the_week+"."
-available_makers="Chrysler, Jeep, Ram"
+name="peter"
+dealership_name="Pine belt cars"
+# available_makers="Chrysler, Jeep, Ram"
 
 class PythonInputs(BaseModel):
     query: str = Field(description="code snippet to run")
@@ -240,12 +263,10 @@ df = pd.read_csv("appointment_new.csv")
 class PythonInputs(BaseModel):
     query: str = Field(description="code snippet to run")
 
-df1 = pd.read_csv("car_desription_new.csv")
-req_col=  ['NewUsed', 'Make', 'Model']
-df1=df1[req_col]
-df1=df1.drop_duplicates()
+
 #     input_template = template.format(dhead=df1.head().to_markdown(),details=details,available_makers=available_makers)
-input_template = template.format(dhead_1=df1.iloc[:3, :5].to_markdown(),dhead=df.iloc[:5, :5].to_markdown(),details=details)
+# input_template = template.format(dhead_1=df1.iloc[:3, :5].to_markdown(),dhead=df.iloc[:5, :5].to_markdown(),details=details)
+input_template = template.format(dhead=df.iloc[:3, :5].to_markdown(),details=details,name=name,dealership_name=dealership_name)
 # class PythonInputs(BaseModel):
 #     query: str = Field(description="code snippet to run")
 # df1 = pd.read_csv("car_desription_new.csv")
@@ -261,16 +282,13 @@ prompt = OpenAIFunctionsAgent.create_prompt(
     extra_prompt_messages=[MessagesPlaceholder(variable_name=memory_key)]
 )
 
-repl = PythonAstREPLTool(locals={"df": df}, name="python_repl",
-    description="Use to check on available appointment times for a given date and time. The input to this tool should be a string in this format mm/dd/yy. This is the only way for you to answer questions about available appointments. This tool will reply with available times for the specified date in 12 hour time, for example: 15:00 and 3pm are the same")
 # repl = PythonAstREPLTool(locals={"df": df}, name="python_repl",
-#         description="Use to check on available appointment times for a given date and time.\
-#         The input to this tool should be a string in this format mm/dd/yy.\
-#         This tool will reply with available times for the specified date in 12 hour time,\
-#         for example: 15:00 and 3pm are the same", args_schema=PythonInputs)
+    # description="Use to check on available appointment times for a given date and time. The input to this tool should be a string in this format mm/dd/yy. This is the only way for you to answer questions about available appointments. This tool will reply with available times for the specified date in 12 hour time, for example: 15:00 and 3pm are the same")
+repl = PythonAstREPLTool(locals={"df": df}, name="appointment_scheduling",
+        description="Use to check on available appointment times for a given date and time. The input to this tool should be a string in this format mm/dd/yy.This tool will reply with available times for the specified date in 12 hour time, for example: 15:00 and are the same", args_schema=PythonInputs)
 repl_1 = PythonAstREPLTool(locals={"df1": df1}, name="python_repl_1",
         description="Use this to get full comprehensive list of make, model of cars and also for checking a single model or make availability")
-tools = [tool1, repl, tool3,repl_1]
+tools = [tool1, repl, tool2, tool3]
 agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
 if 'agent_executor' not in st.session_state:
     agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True, return_source_documents=True,
