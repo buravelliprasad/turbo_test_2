@@ -1,0 +1,14 @@
+langchain
+openai==0.28.1
+streamlit
+tiktoken
+pandas
+tabulate
+streamlit_chat
+chromadb 
+faiss-cpu
+gspread
+pytz 
+airtable-python-wrapper
+tabulate
+langchain-experimental
