@@ -160,6 +160,11 @@ if 'past' not in st.session_state:
 # Initialize user name in session state
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
+with container:
+    if st.session_state.user_name is None:
+        user_name = st.text_input("Your name:")
+        if user_name:
+            st.session_state.user_name = user_name    
 
 llm = ChatOpenAI(model="gpt-4-1106-preview", temperature = 0)
 # llm = ChatOpenAI(model="gpt-4", temperature = 0)
@@ -257,7 +262,7 @@ Respond in a polite US english.
 answer only from the provided content dont makeup answers.
 """
 details= "Today's current date is "+ todays_date +" today's weekday is "+day_of_the_week+"."
-name="peter"
+name=user_name
 dealership_name="Pine belt cars"
 # available_makers="Chrysler, Jeep, Ram"
 
