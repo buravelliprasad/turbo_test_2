@@ -214,7 +214,7 @@ you can run intermediate queries to do exporatory data analysis to give you more
 If the requested date and time for the appointment are unavailable,
 suggest alternative times close to the customer's preference.
 
-Additionally, provide this link'[click here](https://engagedai.io/book-a-demo/)'it will take them to a URL where they
+Additionally, provide this link'[click here](https://app.engagedai.io/engagements/appointment)'it will take them to a URL where they
 can schedule or reschedule their appointment themselves. 
 Appointment Scheduling:
 
