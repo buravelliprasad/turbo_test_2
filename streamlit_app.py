@@ -225,7 +225,6 @@ After scheduling an appointment, initiate the conversation to get tradein car an
 5. Finally, ask for the customer's personal details.
 
     - User: [Response]
-    - Name:
     - Contact Number:
     - Email Address:
 
