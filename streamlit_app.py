@@ -244,7 +244,7 @@ answer only from the provided content dont makeup answers.
 details= "Today's current date is "+ todays_date +" today's weekday is "+day_of_the_week+"."
 
 name = st.session_state.user_name
-dealership_name="Pine belt cars"
+dealership_name="Gosch Auto Group"
 
 
 class PythonInputs(BaseModel):
